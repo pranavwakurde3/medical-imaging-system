@@ -1,0 +1,56 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>AI Chest X-ray Viewer</title>
+<style>
+body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#f4f6f8;color:#1f2a44}
+.banner{background:#b42318;color:#fff;padding:10px 20px;font-weight:600}
+.wrap{display:flex;gap:16px;padding:16px}
+.list{width:260px}.item{padding:8px 10px;margin-bottom:6px;background:#fff;border-radius:6px;cursor:pointer;border:2px solid transparent;font-size:13px}
+.item.sel{border-color:#0f766e}.main{flex:1}.imgs{display:flex;gap:12px}
+.imgs div{background:#000;color:#fff;text-align:center;font-size:12px;border-radius:6px;padding-bottom:6px}
+.imgs img{width:100%;max-width:380px;display:block}
+button{padding:10px 22px;border:0;border-radius:6px;font-size:15px;cursor:pointer;color:#fff;margin-right:8px}
+.ok{background:#0f766e}.no{background:#b42318}
+table{border-collapse:collapse;background:#fff;width:100%;font-size:12px}td,th{border:1px solid #d5dde0;padding:5px 8px}
+</style></head><body>
+<div class="banner">FOR EDUCATION ONLY. NOT FOR CLINICAL USE. AI output may be wrong and must not guide patient care.</div>
+<div id="root"></div>
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script>
+const h = React.createElement, {useState, useEffect} = React;
+function App() {
+  const [cases, setCases] = useState([]), [sel, setSel] = useState(null);
+  const [audit, setAudit] = useState([]), [who, setWho] = useState("");
+  const load = () => {
+    fetch("/cases").then(r => r.json()).then(d => { setCases(d); setSel(s => s || (d[0] && d[0].study_id)); });
+    fetch("/audit").then(r => r.json()).then(setAudit);
+  };
+  useEffect(load, []);
+  const cur = cases.find(c => c.study_id === sel);
+  const decide = d => {
+    if (!who.trim()) { alert("Enter the reviewer name first"); return; }
+    fetch("/decision", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({study_id: sel, decision: d, reviewer: who})}).then(load);
+  };
+  return h("div", {className: "wrap"},
+    h("div", {className: "list"}, h("h3", null, "Studies"),
+      cases.map(c => h("div", {key: c.study_id, className: "item" + (c.study_id === sel ? " sel" : ""), onClick: () => setSel(c.study_id)},
+        c.study_id.slice(0, 8) + "...  AI " + c.score.toFixed(2) + "  [" + (c.decision || "pending") + "]"))),
+    h("div", {className: "main"},
+      cur ? h("div", null,
+        h("div", {className: "imgs"},
+          h("div", null, h("img", {src: "/scan/" + sel}), "Original scan"),
+          h("div", null, h("img", {src: "/overlay/" + sel}), "AI heatmap (Grad-CAM)")),
+        h("h3", null, "AI confidence for pneumonia: " + (cur.score * 100).toFixed(1) + "%"),
+        h("p", null, "Status: " + (cur.decision || "pending review")),
+        h("input", {placeholder: "Reviewer name", value: who, onChange: e => setWho(e.target.value), style: {padding: 8, marginRight: 10}}),
+        h("button", {className: "ok", onClick: () => decide("approve")}, "Approve"),
+        h("button", {className: "no", onClick: () => decide("reject")}, "Reject")
+      ) : h("p", null, "No studies yet. Run inference first."),
+      h("h3", null, "Audit log"),
+      h("table", null, h("tr", null, ["Time", "Study", "Action", "Reviewer", "AI score"].map(t => h("th", {key: t}, t))),
+        audit.map(a => h("tr", {key: a.id}, h("td", null, new Date(a.at * 1000).toLocaleString()),
+          h("td", null, a.study_id.slice(0, 8)), h("td", null, a.action), h("td", null, a.reviewer), h("td", null, a.ai_score.toFixed(3)))))));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script></body></html>
