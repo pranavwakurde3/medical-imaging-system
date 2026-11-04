@@ -43,12 +43,15 @@ These come from one small test set, so they carry wide uncertainty.
 
 See `docs/model_card.md` for the full model card: limits and possible bias.
 
+## Segmentation (simplified)
+A small 2D U-Net outlines the region of the lung where pneumonia was labelled. Masks come from the RSNA boxes. See `docs/segmentation_examples.png` and `03_segment.ipynb`.
+
 ## Limits
 - The model was trained on a small subset using a CPU, so it is far from clinical grade.
 - Training classes were balanced 50/50, so precision in real use would be lower.
 - Results come from one small test set and carry wide uncertainty.
-- A segmentation model was not built because of time and CPU limits.
-- Data versioning with DVC was not completed.
+- Segmentation is simplified: a 2D U-Net in plain PyTorch trained on rectangle masks made from the RSNA bounding boxes, not the 3D U-Net in MONAI named in the project text. Test Dice 0.487 on 60 pneumonia images. Boxes are rough targets, so Dice is limited by the labels.
+- DVC tracks the processed images and the splits file. Its storage is a local folder, not cloud storage.
 - The viewer has no login and Orthanc authentication is off: local demo only.
 - The React page loads React from a CDN (no build step), so it needs internet.
 - Grad-CAM shows where the model looked, not that it is correct.
