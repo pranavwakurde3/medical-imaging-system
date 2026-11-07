@@ -1,9 +1,10 @@
+import os
 import sqlite3, time, requests
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
-ORTHANC = "http://localhost:8042"
+ORTHANC = os.environ.get("ORTHANC_URL", "http://localhost:8042")
 DB = "data/results.db"
 app = FastAPI(title="Medical imaging viewer API")
 

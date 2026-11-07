@@ -1,10 +1,11 @@
+import os
 import io, os, sys, time, sqlite3
 import numpy as np, requests, pydicom, torch, torch.nn as nn, torch.nn.functional as F
 from PIL import Image
 from torchvision import transforms, models
 from matplotlib import colormaps
 
-ORTHANC = "http://localhost:8042"
+ORTHANC = os.environ.get("ORTHANC_URL", "http://localhost:8042")
 DB = "data/results.db"
 os.makedirs("data/results", exist_ok=True)
 

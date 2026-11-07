@@ -10,5 +10,30 @@ services:
       ORTHANC__AUTHENTICATION_ENABLED: "false"
     volumes:
       - orthanc-data:/var/lib/orthanc/db
+  viewer:
+    image: docker-viewer
+    container_name: medical-viewer
+    ports:
+      - "8001:8001"
+    environment:
+      ORTHANC_URL: "http://orthanc:8042"
+    volumes:
+      - results-data:/app/data
+      - ../models:/app/models:ro
+      - ../src:/app/src:ro
+    depends_on:
+      - orthanc
+  inference:
+    image: docker-inference
+    container_name: medical-inference
+    command: ["python", "src/inference.py"]
+    environment:
+      ORTHANC_URL: "http://orthanc:8042"
+    volumes:
+      - results-data:/app/data
+      - ../models:/app/models:ro
+    depends_on:
+      - orthanc
 volumes:
   orthanc-data:
+  results-data:
